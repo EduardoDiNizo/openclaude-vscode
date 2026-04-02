@@ -1,69 +1,71 @@
 import * as vscode from 'vscode';
+import { WebviewManager } from './webviewManager';
 
+/**
+ * WebviewViewProvider for the sidebar (both primary and secondary).
+ *
+ * Extracted from Claude Code extension.js:
+ *   registerWebviewViewProvider("claudeVSCodeSidebar", Z, { webviewOptions: { retainContextWhenHidden: true } })
+ *   registerWebviewViewProvider("claudeVSCodeSidebarSecondary", Z, ...)
+ *
+ * The provider delegates all work to WebviewManager, which handles HTML generation,
+ * bridge setup, and message routing.
+ */
 export class OpenClaudeWebviewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = 'openclaudeSidebarSecondary';
-
-  constructor(private readonly extensionUri: vscode.Uri) {}
+  constructor(private readonly manager: WebviewManager) {}
 
   resolveWebviewView(
     webviewView: vscode.WebviewView,
     _context: vscode.WebviewViewResolveContext,
     _token: vscode.CancellationToken,
   ): void {
-    webviewView.webview.options = {
-      enableScripts: true,
-      localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview')],
-    };
-
-    webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
-  }
-
-  public createPanel(): vscode.WebviewPanel {
-    const panel = vscode.window.createWebviewPanel(
-      'openclaudePanel',
-      'OpenClaude',
-      vscode.ViewColumn.Beside,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-        localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview')],
-      },
-    );
-
-    panel.webview.html = this.getHtmlForWebview(panel.webview);
-    return panel;
-  }
-
-  private getHtmlForWebview(webview: vscode.Webview): string {
-    const distPath = vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview');
-
-    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(distPath, 'index.js'));
-    const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(distPath, 'index.css'));
-
-    const nonce = getNonce();
-
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} https: data:; font-src ${webview.cspSource};">
-  <link href="${styleUri}" rel="stylesheet">
-  <title>OpenClaude</title>
-</head>
-<body>
-  <div id="root"></div>
-  <script nonce="${nonce}" src="${scriptUri}"></script>
-</body>
-</html>`;
+    this.manager.resolveSidebarView(webviewView);
   }
 }
 
-function getNonce(): string {
-  let text = '';
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
+/**
+ * Serializer for restoring webview panels when VS Code is restarted.
+ *
+ * Extracted from Claude Code extension.js:
+ *   registerWebviewPanelSerializer("claudeVSCodePanel", {
+ *     async deserializeWebviewPanel(A, I) {
+ *       let w = I, v;
+ *       if (typeof w?.isFullEditor === "boolean") v = w.isFullEditor;
+ *       else v = ... findIndex ...
+ *       Z.setupPanel(A, void 0, void 0, v)
+ *     }
+ *   })
+ *
+ * When VS Code restarts, it calls deserializeWebviewPanel with the saved panel
+ * and its state. We re-create the bridge and restore the panel.
+ */
+export class OpenClaudePanelSerializer implements vscode.WebviewPanelSerializer {
+  constructor(private readonly manager: WebviewManager) {}
+
+  async deserializeWebviewPanel(
+    panel: vscode.WebviewPanel,
+    state: { isFullEditor?: boolean; sessionId?: string } | undefined,
+  ): Promise<void> {
+    const isFullEditor = state?.isFullEditor ?? this.inferIsFullEditor(panel);
+    this.manager.setupPanel(
+      panel,
+      `restored-${Date.now()}`,
+      'editor-tab',
+      state?.sessionId,
+      undefined,
+      isFullEditor,
+    );
   }
-  return text;
+
+  /**
+   * Infer if a panel was in the primary editor position.
+   * If the panel is in the first tab group, it's likely the primary editor.
+   */
+  private inferIsFullEditor(panel: vscode.WebviewPanel): boolean {
+    return (
+      vscode.window.tabGroups.all.findIndex(
+        (group) => group.viewColumn === panel.viewColumn,
+      ) === 0
+    );
+  }
 }

@@ -2,17 +2,12 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    include: ['test/**/*.test.ts'],
     globals: true,
     environment: 'node',
-    include: ['test/**/*.test.ts'],
-    coverage: {
-      include: ['src/**/*.ts'],
-      exclude: ['src/types/**'],
-    },
-  },
-  resolve: {
+    // Mock vscode module since it's not available outside VS Code
     alias: {
-      vscode: './test/__mocks__/vscode.ts',
+      vscode: new URL('./test/__mocks__/vscode.ts', import.meta.url).pathname,
     },
   },
 });
