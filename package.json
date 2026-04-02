@@ -57,7 +57,7 @@
 						]
 					},
 					"default": [],
-					"description": "Environment variables to set when launching OpenClaude.\n\nPrefer setting environment variables in OpenClaude's settings.json.\nSee documentation: https://github.com/Harsh1210/openclaude-vscode"
+					"description": "Environment variables to set when launching OpenClaude.\n\nPrefer setting environment variables in Claude's settings.json.\nSee documentation: https://code.claude.com/docs/en/settings"
 				},
 				"openclaudeCode.useTerminal": {
 					"type": "boolean",
@@ -70,7 +70,7 @@
 				},
 				"openclaudeCode.claudeProcessWrapper": {
 					"type": "string",
-					"description": "Executable path used to launch the OpenClaude process."
+					"description": "Executable path used to launch the Claude process."
 				},
 				"openclaudeCode.respectGitIgnore": {
 					"type": "boolean",
@@ -234,6 +234,18 @@
 				"title": "OpenClaude: Install Plugin"
 			},
 			{
+				"command": "openclaude.acceptProposedDiff",
+				"title": "OpenClaude: Accept Proposed Changes",
+				"enablement": "openclaude.viewingProposedDiff",
+				"icon": "$(check)"
+			},
+			{
+				"command": "openclaude.rejectProposedDiff",
+				"title": "OpenClaude: Reject Proposed Changes",
+				"enablement": "openclaude.viewingProposedDiff",
+				"icon": "$(discard)"
+			},
+			{
 				"command": "openclaude.insertAtMentioned",
 				"title": "OpenClaude: Insert At-Mentioned"
 			},
@@ -367,7 +379,7 @@
 						}
 					},
 					{
-						"id": "open-openclaude",
+						"id": "open-claude",
 						"title": "Open OpenClaude",
 						"description": "Click the OpenClaude icon in the top right corner, or press Ctrl+Escape (Cmd+Escape on Mac) to start a conversation.",
 						"media": {
@@ -399,6 +411,16 @@
 		],
 		"menus": {
 			"editor/title": [
+				{
+					"command": "openclaude.acceptProposedDiff",
+					"when": "openclaude.viewingProposedDiff",
+					"group": "navigation"
+				},
+				{
+					"command": "openclaude.rejectProposedDiff",
+					"when": "openclaude.viewingProposedDiff",
+					"group": "navigation"
+				},
 				{
 					"command": "openclaude.acceptProposedDiff",
 					"when": "openclaude.viewingProposedDiff",
