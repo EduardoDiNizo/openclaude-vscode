@@ -1,21 +1,44 @@
 import * as vscode from 'vscode';
+import { OpenClaudeWebviewProvider } from './webview/webviewProvider';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('OpenClaude VS Code extension activated');
 
-  // Register the "Open in New Tab" command as a basic smoke test
-  const openInTab = vscode.commands.registerCommand('openclaude.editor.open', () => {
-    vscode.window.showInformationMessage('OpenClaude: Coming soon!');
-  });
+  const provider = new OpenClaudeWebviewProvider(context.extensionUri);
 
-  // Register the "Open" command (hidden, used by editor title button)
-  const openLast = vscode.commands.registerCommand('openclaude.editor.openLast', () => {
-    vscode.window.showInformationMessage('OpenClaude: Coming soon!');
-  });
+  // Register sidebar webview provider (secondary sidebar)
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider('openclaudeSidebarSecondary', provider),
+  );
 
-  // Register remaining commands as no-ops for now (prevents "command not found" errors)
-  const commandIds = [
-    'openclaude.primaryEditor.open',
+  // Register sidebar webview provider (primary sidebar — older VS Code)
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider('openclaudeSidebar', provider),
+  );
+
+  // Open in New Tab
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openclaude.editor.open', () => {
+      provider.createPanel();
+    }),
+  );
+
+  // Open (last location)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openclaude.editor.openLast', () => {
+      provider.createPanel();
+    }),
+  );
+
+  // Open in Primary Editor
+  context.subscriptions.push(
+    vscode.commands.registerCommand('openclaude.primaryEditor.open', () => {
+      provider.createPanel();
+    }),
+  );
+
+  // Register remaining commands as no-ops for now
+  const noopCommands = [
     'openclaude.window.open',
     'openclaude.sidebar.open',
     'openclaude.terminal.open',
@@ -35,15 +58,13 @@ export function activate(context: vscode.ExtensionContext) {
     'openclaude.logout',
   ];
 
-  for (const id of commandIds) {
+  for (const id of noopCommands) {
     context.subscriptions.push(
       vscode.commands.registerCommand(id, () => {
         vscode.window.showInformationMessage('OpenClaude: Coming soon!');
       }),
     );
   }
-
-  context.subscriptions.push(openInTab, openLast);
 }
 
 export function deactivate() {
