@@ -187,9 +187,10 @@ describe('ProcessManager', () => {
       expect(manager.state).toBe(ProcessState.Idle);
     });
 
-    it('should transition to spawning on spawn()', () => {
+    it('should transition to initializing on spawn()', () => {
       manager.spawn();
-      expect(manager.state).toBe(ProcessState.Spawning);
+      // State transitions through Spawning → Initializing synchronously
+      expect(manager.state).toBe(ProcessState.Initializing);
     });
   });
 
@@ -209,9 +210,11 @@ describe('ProcessManager', () => {
       const errorFn = vi.fn();
       manager.onError(errorFn);
 
-      manager.spawn();
+      // Attach .catch() immediately to prevent unhandled rejection
+      const spawnPromise = (manager.spawn() as Promise<unknown>)?.catch(() => {});
       mockProc.emit('error', new Error('ENOENT: openclaude not found'));
 
+      await spawnPromise;
       await new Promise((r) => setTimeout(r, 10));
       expect(errorFn).toHaveBeenCalledWith(
         expect.objectContaining({ message: expect.stringContaining('ENOENT') }),
@@ -231,7 +234,7 @@ describe('ProcessManager', () => {
   });
 
   describe('write', () => {
-    it('should write messages to the transport', () => {
+    it('should write messages to the transport', async () => {
       manager.spawn();
 
       const stdinChunks: Buffer[] = [];
@@ -239,6 +242,7 @@ describe('ProcessManager', () => {
 
       manager.write({ type: 'keep_alive' });
 
+      await new Promise((r) => setTimeout(r, 10));
       const written = Buffer.concat(stdinChunks).toString();
       expect(written).toContain('"type":"keep_alive"');
     });
