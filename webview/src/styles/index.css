@@ -11,10 +11,10 @@
    ============================================================ */
 
 html {
-  /* Brand */
-  --app-claude-orange: #d97757;
-  --app-claude-clay-button-orange: #c6613f;
-  --app-claude-ivory: #faf9f5;
+  /* Brand — OpenClaude: white ring, neutral colors (avoids Claude's orange) */
+  --app-claude-orange: #ffffff;
+  --app-claude-clay-button-orange: #ffffff;
+  --app-claude-ivory: #1a1a1a;
   --app-claude-slate: #141413;
 
   /* Spacing */

@@ -1,27 +1,54 @@
 # OpenClaude VS Code
 
-AI coding assistant for VS Code powered by any LLM — Anthropic Claude, OpenAI, Ollama, Gemini, or a custom endpoint.
+**AI coding assistant for VS Code powered by any LLM** — OpenAI GPT-4o, Google Gemini, DeepSeek, Ollama, Codex, AWS Bedrock, and 200+ models via OpenAI-compatible APIs.
+
+OpenClaude wraps the [OpenClaude CLI](https://gitlawb.com/node/repos/z6MkqDnb/openclaude) in a full-featured VS Code extension with a chat interface, diff viewer, @-mentions, slash commands, session management, and more.
+
+---
 
 ## Features
 
-- **Chat UI** — Streaming chat panel with markdown rendering, code blocks, and tool-use visualization
-- **@-mentions** — Reference files, symbols, and folders directly in your prompt
-- **Diff viewer** — Review, accept, or reject AI-proposed file changes with a side-by-side diff
-- **Permissions system** — Fine-grained control over what the AI can read, write, or execute
-- **Session management** — Browse, resume, and fork past conversations
-- **MCP IDE server** — Exposes VS Code context to the AI via the Model Context Protocol
-- **Plugin manager** — Install and manage MCP plugins from the UI
-- **Git worktree support** — Run parallel AI sessions in isolated worktrees
-- **Checkpoint / rewind** — Snapshot and restore conversation state
-- **Onboarding walkthrough** — Step-by-step guide on first launch
-- **Status bar** — Live token count, model name, and quick-action buttons
-- **Fast mode & prompt suggestions** — Reduce latency with cached system prompts
+### Chat Interface
+- Streaming chat panel with markdown rendering and syntax-highlighted code blocks
+- Tool call visualization (collapsible blocks showing what the AI is doing)
+- Session history — browse, resume, and fork past conversations
+- Stop/interrupt generation at any time
+
+### Code Editing
+- Native VS Code diff viewer for AI-proposed changes (accept/reject)
+- @-mention files, folders, and line ranges for context
+- Checkpoint/rewind — snapshot and restore to any point in conversation
+
+### Multi-Provider Support
+Switch between LLM providers with `/provider` or the provider badge:
+
+| Provider | Models |
+|---|---|
+| **OpenAI** | GPT-4o, GPT-4 Turbo, GPT-4o-mini |
+| **Codex (ChatGPT)** | gpt-5.4, codexplan, codexspark |
+| **Google Gemini** | Gemini 2.0 Flash, Pro |
+| **Ollama** | Llama 3, Mistral, CodeLlama (local) |
+| **Anthropic** | Claude Sonnet, Opus, Haiku |
+| **AWS Bedrock** | Claude via Bedrock |
+| **Google Vertex AI** | Claude via Vertex |
+| **GitHub Models** | Various via GitHub Marketplace |
+| **Custom** | Any OpenAI-compatible endpoint |
+
+### Developer Tools
+- 5 permission modes (Default, Plan, Accept Edits, Bypass, Don't Ask)
+- MCP (Model Context Protocol) server integration
+- Plugin manager for MCP plugins
+- Git worktree support for parallel AI sessions
+- Status bar with live token count and cost
+- Onboarding walkthrough for new users
+
+---
 
 ## Installation
 
-### From the Marketplace
+### From the VS Code Marketplace
 
-Search for **OpenClaude** in the VS Code Extensions panel (`Ctrl+Shift+X`) and click Install.
+Search for **OpenClaude** in the Extensions panel (`Ctrl+Shift+X`) and click Install.
 
 ### From a `.vsix` file
 
@@ -29,109 +56,117 @@ Search for **OpenClaude** in the VS Code Extensions panel (`Ctrl+Shift+X`) and c
 code --install-extension openclaude-vscode-0.1.0.vsix
 ```
 
-## Provider Setup
+### Prerequisites
 
-OpenClaude delegates to the `claude` CLI process. Configure your provider via environment variables or the settings UI.
-
-### Anthropic (default)
+Install the OpenClaude CLI first:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+npm install -g @gitlawb/openclaude
 ```
 
-### OpenAI
+---
+
+## Quick Start
+
+### 1. Install the CLI
 
 ```bash
-export OPENAI_API_KEY=sk-...
-export ANTHROPIC_BASE_URL=https://api.openai.com/v1
+npm install -g @gitlawb/openclaude
 ```
 
-### Ollama (local)
+### 2. Configure a provider
 
+**OpenAI (recommended):**
 ```bash
-# Start Ollama first
-ollama serve
-
-export ANTHROPIC_BASE_URL=http://localhost:11434/v1
-export ANTHROPIC_API_KEY=ollama
+export CLAUDE_CODE_USE_OPENAI=1
+export OPENAI_API_KEY=sk-your-key-here
+export OPENAI_MODEL=gpt-4o
 ```
 
-### Gemini
-
+**Ollama (local, free):**
 ```bash
-export GOOGLE_API_KEY=AIza...
+ollama serve  # start Ollama first
+export CLAUDE_CODE_USE_OPENAI=1
+export OPENAI_API_KEY=ollama
+export OPENAI_BASE_URL=http://localhost:11434/v1
+export OPENAI_MODEL=llama3
 ```
 
-### Custom endpoint
-
-Set `openclaudeCode.environmentVariables` in your VS Code settings:
-
-```json
-{
-  "openclaudeCode.environmentVariables": [
-    { "name": "ANTHROPIC_BASE_URL", "value": "https://my-proxy.example.com/v1" },
-    { "name": "ANTHROPIC_API_KEY", "value": "my-key" }
-  ]
-}
+**Gemini:**
+```bash
+export CLAUDE_CODE_USE_GEMINI=1
+export GOOGLE_API_KEY=AIza-your-key
+export GEMINI_MODEL=gemini-2.0-flash
 ```
 
-## Usage
+**Codex (ChatGPT):**
+```bash
+export CLAUDE_CODE_USE_OPENAI=1
+export OPENAI_API_KEY=sk-your-key
+export OPENAI_BASE_URL=https://api.codex.openai.com/v1
+export OPENAI_MODEL=gpt-5.4
+```
 
-### Opening the panel
+Or use the `/provider` command in the chat to set up providers interactively.
 
-| Action | Shortcut |
+### 3. Open OpenClaude
+
+- Press `Cmd+Escape` (Mac) / `Ctrl+Escape` (Windows/Linux)
+- Or click the OpenClaude icon in the sidebar
+- Or run `OpenClaude: Open in New Tab` from the Command Palette
+
+### 4. Start coding
+
+Type a message and press Enter. Use `@` to mention files, `/` for slash commands.
+
+---
+
+## Keyboard Shortcuts
+
+| Action | Mac | Windows/Linux |
+|---|---|---|
+| Open / Focus | `Cmd+Escape` | `Ctrl+Escape` |
+| Open in new tab | `Cmd+Shift+Escape` | `Ctrl+Shift+Escape` |
+| Insert @-mention | `Alt+K` | `Alt+K` |
+| New conversation | `Cmd+N` | `Ctrl+N` (opt-in) |
+
+---
+
+## Slash Commands
+
+Type `/` in the chat input to see all available commands. Key commands include:
+
+| Command | Description |
 |---|---|
-| Open in new tab | `Ctrl+Shift+Escape` / `Cmd+Shift+Escape` |
-| Focus / blur input | `Ctrl+Escape` / `Cmd+Escape` |
-| Open in sidebar | Command Palette → `OpenClaude: Open in Side Bar` |
+| `/provider` | Set up and switch LLM providers |
+| `/model` | Switch models |
+| `/compact` | Compact conversation context |
+| `/resume` | Browse and resume past sessions |
+| `/diff` | Show git diff |
+| `/commit` | Create a git commit |
+| `/review` | Review code or PR |
+| `/mcp` | Manage MCP servers |
+| `/plugins` | Manage plugins |
+| `/help` | Show all commands |
 
-### Chat
+---
 
-Type your message and press `Enter` to send. Use `Ctrl/Cmd+Enter` if you enable `openclaudeCode.useCtrlEnterToSend`.
-
-### @-mentions
-
-Type `@` in the input to open the mention picker. You can reference:
-
-- `@file` — attach a file's contents
-- `@folder` — attach all files in a directory
-- `@symbol` — attach a specific code symbol
-
-### Diff viewer
-
-When the AI proposes a file change, a diff opens automatically. Use the toolbar buttons (✓ / ✗) or the command palette to **Accept** or **Reject** the change.
-
-### Permissions
-
-Control what the AI is allowed to do via `openclaudeCode.initialPermissionMode`:
-
-| Mode | Description |
-|---|---|
-| `default` | Prompt for each sensitive action |
-| `acceptEdits` | Auto-accept file edits, prompt for shell commands |
-| `plan` | Read-only planning mode |
-| `bypassPermissions` | Skip all prompts (sandboxes only) |
-
-### Sessions
-
-Click **Past Conversations** or type `/resume` to browse previous sessions. Sessions are stored locally and can be resumed at any time.
-
-## Configuration Reference
+## Settings
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
 | `openclaudeCode.selectedModel` | string | `"default"` | AI model to use |
 | `openclaudeCode.initialPermissionMode` | enum | `"default"` | Starting permission mode |
 | `openclaudeCode.useCtrlEnterToSend` | boolean | `false` | Require Ctrl+Enter to send |
-| `openclaudeCode.preferredLocation` | enum | `"panel"` | Default panel location (`sidebar` or `panel`) |
-| `openclaudeCode.autosave` | boolean | `true` | Auto-save files before AI reads/writes |
-| `openclaudeCode.respectGitIgnore` | boolean | `true` | Honour `.gitignore` in file searches |
-| `openclaudeCode.allowDangerouslySkipPermissions` | boolean | — | Bypass all permission prompts |
-| `openclaudeCode.useTerminal` | boolean | `false` | Launch in terminal instead of native UI |
-| `openclaudeCode.environmentVariables` | array | `[]` | Extra env vars passed to the AI process |
-| `openclaudeCode.disableLoginPrompt` | boolean | `false` | Suppress auth prompts (external auth) |
+| `openclaudeCode.preferredLocation` | enum | `"panel"` | Default panel location |
+| `openclaudeCode.autosave` | boolean | `true` | Auto-save before AI reads/writes |
+| `openclaudeCode.respectGitIgnore` | boolean | `true` | Honor .gitignore in searches |
+| `openclaudeCode.useTerminal` | boolean | `false` | Launch in terminal mode |
+| `openclaudeCode.environmentVariables` | array | `[]` | Extra env vars for the AI process |
 | `openclaudeCode.hideOnboarding` | boolean | `false` | Hide the onboarding checklist |
-| `openclaudeCode.enableNewConversationShortcut` | boolean | `false` | Enable `Cmd/Ctrl+N` for new conversation |
+| `openclaudeCode.enableNewConversationShortcut` | boolean | `false` | Enable Cmd/Ctrl+N |
+
+---
 
 ## Contributing
 
@@ -139,28 +174,38 @@ Click **Past Conversations** or type `/resume` to browse previous sessions. Sess
 git clone https://github.com/Harsh1210/openclaude-vscode
 cd openclaude-vscode
 npm install
+cd webview && npm install && cd ..
 npm run build
 ```
 
-Run tests:
-
-```bash
-npm test
-```
-
-Run in development (watch mode):
-
+Development (watch mode):
 ```bash
 npm run watch
-# Press F5 in VS Code to launch the Extension Development Host
+# Press F5 in VS Code to launch Extension Development Host
 ```
 
-Lint and format:
-
+Package:
 ```bash
-npm run lint
-npm run format
+npx @vscode/vsce package --no-dependencies --allow-missing-repository
 ```
+
+---
+
+## Architecture
+
+```
+Webview (React + Tailwind)
+  |  postMessage
+Extension Host (TypeScript)
+  |  stdin/stdout NDJSON
+OpenClaude CLI (child process)
+  |  OpenAI Chat Completions API
+Any LLM Provider
+```
+
+The extension is a thin UI wrapper. All intelligence (tools, providers, slash commands, MCP, plugins) lives in the CLI.
+
+---
 
 ## License
 
