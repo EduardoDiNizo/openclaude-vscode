@@ -40,11 +40,26 @@ export class Uri {
     return new Uri(path);
   }
 
+  static parse(value: string): Uri {
+    // Parse scheme:path format (e.g., "openclaude-diff-original:/test/file.ts")
+    const colonIndex = value.indexOf(':');
+    if (colonIndex > 0) {
+      const scheme = value.substring(0, colonIndex);
+      const path = value.substring(colonIndex + 1);
+      const uri = new Uri(path);
+      (uri as { scheme: string }).scheme = scheme;
+      return uri;
+    }
+    return new Uri(value);
+  }
+
   readonly fsPath: string;
   readonly scheme = 'file';
+  readonly path: string;
 
   constructor(fsPath: string) {
     this.fsPath = fsPath;
+    this.path = fsPath;
   }
 
   toString(): string {
@@ -169,7 +184,12 @@ export const window = {
   showWarningMessage: () => {},
   showErrorMessage: () => {},
   onDidChangeActiveColorTheme: new EventEmitter<unknown>().event,
-  tabGroups: { all: [] as { viewColumn?: ViewColumn; tabs: { input: unknown }[] }[] },
+  tabGroups: {
+    all: [] as { viewColumn?: ViewColumn; tabs: { input: unknown }[] }[],
+    activeTabGroup: { activeTab: undefined as unknown },
+    onDidChangeTabs: new EventEmitter<unknown>().event,
+    close: async () => {},
+  },
   activeTextEditor: undefined,
 };
 
@@ -180,6 +200,11 @@ export const workspace = {
   onDidChangeConfiguration: new EventEmitter<unknown>().event,
   asRelativePath: (path: string) => path,
   workspaceFolders: [],
+  isTrusted: true,
+  textDocuments: [] as unknown[],
+  registerTextDocumentContentProvider: (_scheme: string, _provider: unknown) => ({
+    dispose: () => {},
+  }),
 };
 
 export const commands = {
