@@ -215,8 +215,8 @@ export function ChatPanel() {
         error={error}
       />
 
-      {/* Input area */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--app-input-border)', flexShrink: 0 }}>
+      {/* Input area — Claude Code positions this absolutely; we use flow layout */}
+      <div style={{ padding: '12px 16px', flexShrink: 0 }}>
         <div className="input-wrapper">
           <div
             className="input-container"
@@ -536,8 +536,8 @@ function InputArea({ isStreaming, isStarting, onSend, onInterrupt, effortLevel, 
         onRemove={(i) => setAttachments((prev) => prev.filter((_, idx) => idx !== i))}
       />
 
-      {/* Textarea row */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', padding: '8px 8px 4px 12px', gap: 4 }}>
+      {/* Textarea row — matches Claude Code .messageInputContainer_cKsPxg layout */}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end' }}>
         <textarea
           ref={textareaRef}
           className="input"
@@ -555,16 +555,20 @@ function InputArea({ isStreaming, isStarting, onSend, onInterrupt, effortLevel, 
             border: 'none',
             outline: 'none',
             color: 'var(--app-input-foreground)',
-            fontFamily: 'var(--vscode-chat-font-family)',
-            fontSize: 'var(--vscode-chat-font-size, 13px)',
-            lineHeight: 1.4,
+            fontFamily: 'inherit',
+            fontSize: 'inherit',
+            lineHeight: 1.5,
             maxHeight: 200,
             overflowY: 'auto',
-            padding: 0,
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
+            padding: '10px 14px',
+            minHeight: '1.5em',
+            alignSelf: 'stretch',
           }}
         />
 
-        {/* Send / Stop button — matches Claude Code's sendButton_gGYT1w exactly */}
+        {/* Send / Stop button — uses CSS .sendButton class (exact from Claude Code) */}
         <button
           className="sendButton"
           disabled={sendDisabled}
@@ -577,50 +581,24 @@ function InputArea({ isStreaming, isStarting, onSend, onInterrupt, effortLevel, 
           }}
           title={isStreaming ? 'Stop generation (Escape)' : 'Send message (Enter)'}
           data-permission-mode={permissionMode}
-          style={{
-            cursor: sendDisabled ? 'not-allowed' : 'pointer',
-            display: 'flex',
-            // Claude Code: send button is orange bg with white icon; stop button is transparent with colored icon
-            color: isStreaming
-              ? 'var(--app-secondary-foreground)'
-              : 'var(--app-claude-ivory, #fff)',
-            backgroundColor: isStreaming
-              ? 'transparent'
-              : 'var(--app-claude-clay-button-orange, #D97757)',
-            border: 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: 26,
-            height: 26,
-            borderRadius: 5,
-            flexShrink: 0,
-            padding: 0,
-            opacity: sendDisabled ? 0.4 : 1,
-          }}
+          style={{ flexShrink: 0, margin: '0 6px 8px 0' }}
         >
           {isStreaming ? (
-            /* Stop icon — square */
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            /* Stop icon */
+            <svg className="stopIcon" viewBox="0 0 16 16" fill="currentColor">
               <rect x="3" y="3" width="10" height="10" rx="2" />
             </svg>
           ) : (
             /* Send icon — arrow up */
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="sendIcon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M8 12V4M4 8l4-4 4 4" />
             </svg>
           )}
         </button>
       </div>
 
-      {/* Toolbar row */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        padding: '2px 8px 6px',
-        gap: 2,
-        borderTop: '1px solid var(--app-input-border)',
-        marginTop: 2,
-      }}>
+      {/* Toolbar row — matches Claude Code .inputFooter_gGYT1w */}
+      <div className="input-footer">
         {/* Left: action buttons */}
         <ToolbarIconButton onClick={handleSlashButtonClick} title="Slash commands" disabled={textareaDisabled}>
           <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13 }}>/</span>

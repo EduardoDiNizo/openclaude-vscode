@@ -24,7 +24,7 @@ export function AssistantMessage({ message, isLatest = false, isStreaming = fals
     .join('\n');
 
   return (
-    <div className="px-4 py-2 group relative">
+    <div className="group relative" style={{ width: '100%' }}>
       {/* Message actions (hover) */}
       <div className="absolute top-2 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
         <MessageActions

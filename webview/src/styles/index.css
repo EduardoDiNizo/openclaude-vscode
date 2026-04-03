@@ -200,6 +200,8 @@ body {
 
 button {
   color: var(--app-primary-foreground);
+  font-family: var(--vscode-chat-font-family);
+  font-size: var(--vscode-chat-font-size, 13px);
 }
 
 textarea:focus {
@@ -446,6 +448,289 @@ details[open] .thinking-toggle {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ============================================================
+   Messages container — exact from Claude Code .messagesContainer_07S1Yg
+   ============================================================ */
+
+.messages-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  background-color: var(--app-primary-background);
+  position: relative;
+  flex-direction: column;
+  flex: 1;
+  gap: 0;
+  min-width: 0;
+  padding: 20px 20px 40px;
+}
+
+.messages-container:focus {
+  outline: none;
+}
+
+/* ============================================================
+   Message — exact from Claude Code .message_07S1Yg
+   ============================================================ */
+
+.message {
+  color: var(--app-primary-foreground);
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 8px 0;
+}
+
+.message:first-child {
+  padding-top: 0;
+}
+
+/* ============================================================
+   Empty state — exact from Claude Code .emptyState_07S1Yg
+   ============================================================ */
+
+.empty-state {
+  display: flex;
+  animation: fadeIn .3s ease-in-out;
+  user-select: none;
+  flex-direction: column;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+}
+
+.empty-state-content {
+  text-align: center;
+  position: relative;
+  max-width: 480px;
+  top: -30px;
+}
+
+/* ============================================================
+   Error banner — exact from Claude Code .errorBanner_07S1Yg
+   ============================================================ */
+
+.error-banner {
+  background-color: color-mix(in srgb, var(--app-primary-background) 96%, var(--app-error-foreground) 4%);
+  color: var(--app-error-foreground);
+  border-bottom: 1px solid var(--app-error-foreground);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 13px;
+}
+
+.error-banner a {
+  color: inherit;
+}
+
+.error-message {
+  word-wrap: break-word;
+  user-select: text;
+  flex: 1;
+  margin-top: 2px;
+  padding: 10px 12px;
+}
+
+.error-dismiss {
+  color: var(--app-error-foreground);
+  cursor: pointer;
+  display: flex;
+  background: 0 0;
+  border: none;
+  justify-content: center;
+  align-items: center;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.error-dismiss:hover {
+  opacity: .7;
+}
+
+/* ============================================================
+   Spinner row — exact from Claude Code .spinnerRow_07S1Yg
+   ============================================================ */
+
+.spinner-row {
+  display: flex;
+  animation: fadeIn .3s ease-in-out;
+  align-items: center;
+  height: 1.85em;
+  margin-top: 4px;
+  margin-left: 0;
+}
+
+/* ============================================================
+   Input footer — exact from Claude Code .inputFooter_gGYT1w
+   ============================================================ */
+
+.input-footer {
+  display: flex;
+  color: var(--app-secondary-foreground);
+  border-top: .5px solid var(--app-input-border);
+  z-index: 6;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px;
+}
+
+/* ============================================================
+   Footer button — exact from Claude Code .footerButton_gGYT1w
+   ============================================================ */
+
+.footer-button {
+  position: relative;
+  appearance: none;
+  color: var(--app-secondary-foreground);
+  cursor: pointer;
+  display: inline-flex;
+  background: 0 0;
+  border: none;
+  border-radius: 2px;
+  flex-shrink: 1;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 2px 4px;
+  font-family: inherit;
+  font-size: .85em;
+}
+
+.footer-button span {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  display: inline-block;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 200px;
+}
+
+.footer-button:hover {
+  background-color: var(--app-ghost-button-hover-background);
+}
+
+.footer-button:active:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.footer-button svg {
+  flex-shrink: 0;
+  height: 1em;
+}
+
+/* ============================================================
+   Send button — exact from Claude Code .sendButton_gGYT1w
+   ============================================================ */
+
+.sendButton, .menuButton {
+  cursor: pointer;
+  display: flex;
+  color: var(--app-secondary-foreground);
+  background-color: transparent;
+  border: none;
+  justify-content: center;
+  align-items: center;
+  width: 26px;
+  height: 26px;
+}
+
+.sendButton {
+  border-radius: 5px;
+}
+
+/* Default send button: orange */
+.sendButton {
+  color: var(--app-claude-ivory);
+  background-color: var(--app-claude-clay-button-orange);
+}
+
+/* Permission mode variants */
+.sendButton[data-permission-mode="acceptEdits"] {
+  color: var(--app-primary-background);
+  background-color: var(--app-primary-foreground);
+}
+
+.sendButton[data-permission-mode="plan"] {
+  color: var(--app-button-foreground);
+  background-color: var(--vscode-focusBorder, var(--app-button-background));
+}
+
+.sendButton[data-permission-mode="bypassPermissions"],
+.sendButton[data-permission-mode="auto"] {
+  color: var(--app-button-foreground);
+  background-color: var(--app-error-foreground);
+}
+
+.sendButton:disabled, .menuButton:disabled {
+  cursor: not-allowed;
+  opacity: .4;
+}
+
+.sendButton:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.sendButton:active:not(:disabled) {
+  filter: brightness(.9);
+}
+
+/* Send icon */
+.sendIcon {
+  color: var(--app-claude-ivory);
+  display: block;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  transform: none;
+}
+
+.sendButton[data-permission-mode="acceptEdits"] .sendIcon {
+  color: var(--app-tool-background);
+}
+
+.sendButton[data-permission-mode="plan"] .sendIcon,
+.sendButton[data-permission-mode="bypassPermissions"] .sendIcon,
+.sendButton[data-permission-mode="auto"] .sendIcon {
+  color: var(--app-button-foreground);
+}
+
+/* Stop icon */
+.stopIcon {
+  color: var(--app-claude-ivory);
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.sendButton[data-permission-mode="acceptEdits"] .stopIcon {
+  color: var(--app-tool-background);
+}
+
+.sendButton[data-permission-mode="plan"] .stopIcon,
+.sendButton[data-permission-mode="bypassPermissions"] .stopIcon,
+.sendButton[data-permission-mode="auto"] .stopIcon {
+  color: var(--app-button-foreground);
+}
+
+/* ============================================================
+   Divider — exact from Claude Code .divider_gGYT1w
+   ============================================================ */
+
+.input-divider {
+  background: var(--app-input-border);
+  flex-shrink: 0;
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
 }
 
 /* ============================================================

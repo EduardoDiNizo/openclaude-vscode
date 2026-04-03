@@ -14,7 +14,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onNewConversation,
 }) => {
   return (
-    <div className="flex items-center justify-between px-3 py-2 border-b border-vscode-border min-h-[40px]">
+    <div style={{
+      display: 'flex',
+      borderBottom: '1px solid var(--app-primary-border-color)',
+      backgroundColor: 'var(--app-header-background)',
+      userSelect: 'none',
+      justifyContent: 'flex-start',
+      gap: 4,
+      padding: 6,
+      alignItems: 'center',
+      minHeight: 40,
+    }}>
       {/* History button */}
       <button
         onClick={onToggleSessionList}

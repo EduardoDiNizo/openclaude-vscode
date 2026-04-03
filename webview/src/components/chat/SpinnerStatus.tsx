@@ -54,17 +54,22 @@ export const SpinnerStatus: React.FC<SpinnerStatusProps> = ({
   if (!isActive) return null;
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--vscode-descriptionForeground)]">
+    <div className="spinner-row" style={{ gap: 8, padding: '0 16px', fontSize: '0.85em', color: 'var(--app-secondary-foreground)' }}>
       <div
-        className={`w-3 h-3 border-2 border-[var(--vscode-foreground)]/20 border-t-[var(--vscode-focusBorder)] rounded-full ${
-          reducedMotion ? '' : 'animate-spin'
-        }`}
+        style={{
+          width: 12,
+          height: 12,
+          border: '2px solid var(--app-input-border)',
+          borderTopColor: 'var(--app-spinner-foreground)',
+          borderRadius: '50%',
+          animation: reducedMotion ? 'none' : 'spin 1s linear infinite',
+        }}
         role="status"
         aria-label="Loading"
       />
       <span>{verbs[verbIndex]}...</span>
       {tipsEnabled && (
-        <span className="ml-auto text-[var(--vscode-foreground)]/30 truncate max-w-[200px]">
+        <span style={{ marginLeft: 'auto', opacity: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
           {tips[tipIndex]}
         </span>
       )}
