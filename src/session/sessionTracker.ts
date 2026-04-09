@@ -325,6 +325,50 @@ export class SessionTracker implements vscode.Disposable {
     }
   }
 
+  /**
+   * Load full user/assistant messages from a session's JSONL file.
+   * Returns them in order for replaying into the webview on resume.
+   */
+  async loadSessionMessages(sessionId: string): Promise<Array<Record<string, unknown>>> {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return [];
+    }
+
+    const messages: Array<Record<string, unknown>> = [];
+
+    try {
+      const fileStream = fs.createReadStream(session.filePath, { encoding: 'utf-8' });
+      const rl = readline.createInterface({
+        input: fileStream,
+        crlfDelay: Infinity,
+      });
+
+      for await (const line of rl) {
+        if (!line.trim()) {
+          continue;
+        }
+        let entry: Record<string, unknown>;
+        try {
+          entry = JSON.parse(line);
+        } catch {
+          continue;
+        }
+
+        // Only include user and assistant messages (skip meta, system, result, etc.)
+        if (entry.type === 'user' && !entry.isMeta) {
+          messages.push(entry);
+        } else if (entry.type === 'assistant') {
+          messages.push(entry);
+        }
+      }
+    } catch (err) {
+      console.error(`SessionTracker: failed to load messages for ${sessionId}:`, err);
+    }
+
+    return messages;
+  }
+
   /** Update a session's title (called when ai-title arrives during active session). */
   updateSessionTitle(sessionId: string, newTitle: string): void {
     const s = this.sessions.get(sessionId);

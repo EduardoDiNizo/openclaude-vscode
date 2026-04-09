@@ -600,6 +600,17 @@ export function activate(context: vscode.ExtensionContext) {
       env[name] = value;
     }
 
+    // Clear old messages and load session history into webview
+    webviewManager!.broadcast({ type: 'clearMessages' } as never);
+
+    const historyMessages = await sessionTracker.loadSessionMessages(message.sessionId);
+    if (historyMessages.length > 0) {
+      webviewManager!.broadcast({
+        type: 'session_history',
+        messages: historyMessages,
+      } as never);
+    }
+
     isSpawning = true;
     webviewManager!.broadcast({ type: 'process_state', state: 'starting' });
 

@@ -106,20 +106,25 @@ export function useChat() {
   const streamingUuidRef = useRef<string | null>(null);
 
   const handleUserMessage = useCallback((msg: UserMessage) => {
+    const id = msg.uuid || `user-${Date.now()}`;
     const text =
       typeof msg.message.content === 'string'
         ? msg.message.content
         : '[complex content]';
 
     const chatMsg: ChatMessage = {
-      id: msg.uuid || `user-${Date.now()}`,
+      id,
       role: 'user',
       text,
       isStreaming: false,
       timestamp: Date.now(),
       parentToolUseId: null,
     };
-    setMessages((prev) => [...prev, chatMsg]);
+    setMessages((prev) => {
+      // Skip if this message was already loaded from session history
+      if (msg.uuid && prev.some((m) => m.id === msg.uuid)) return prev;
+      return [...prev, chatMsg];
+    });
   }, []);
 
   const handleStreamEvent = useCallback(
@@ -214,7 +219,11 @@ export function useChat() {
       parentToolUseId: msg.parent_tool_use_id,
       model: msg.message.model,
     };
-    setMessages((prev) => [...prev, chatMsg]);
+    setMessages((prev) => {
+      // Skip if this message was already loaded from session history
+      if (msg.uuid && prev.some((m) => m.id === msg.uuid)) return prev;
+      return [...prev, chatMsg];
+    });
   }, []);
 
   const handleResultMessage = useCallback((msg: ResultMessage) => {
@@ -462,6 +471,58 @@ export function useChat() {
           setToolActivity(null);
           streamingUuidRef.current = null;
           resetStream();
+        }
+
+        // Bulk load session history on resume
+        if (data.type === 'session_history' && Array.isArray(data.messages)) {
+          const historyMsgs: ChatMessage[] = [];
+          for (const entry of data.messages as Array<Record<string, unknown>>) {
+            if (entry.type === 'user') {
+              const msg = entry.message as Record<string, unknown> | undefined;
+              if (!msg) continue;
+              const content = msg.content;
+              let text = '';
+              if (typeof content === 'string') {
+                text = content;
+              } else if (Array.isArray(content)) {
+                const textBlock = content.find(
+                  (b: Record<string, unknown>) => b.type === 'text',
+                );
+                if (textBlock && typeof textBlock.text === 'string') {
+                  text = textBlock.text;
+                }
+              }
+              historyMsgs.push({
+                id: (entry.uuid as string) || `user-hist-${historyMsgs.length}`,
+                role: 'user',
+                text,
+                isStreaming: false,
+                timestamp: entry.timestamp ? new Date(entry.timestamp as string).getTime() : Date.now(),
+                parentToolUseId: (entry.parent_tool_use_id as string) || null,
+              });
+            } else if (entry.type === 'assistant') {
+              const msg = entry.message as Record<string, unknown> | undefined;
+              if (!msg) continue;
+              const contentArr = (msg.content || []) as Array<Record<string, unknown>>;
+              const blocks = contentArr.map((block, index) => ({
+                index,
+                block: block as unknown as import('../types/messages').ContentBlock,
+                isStreaming: false,
+              }));
+              historyMsgs.push({
+                id: (entry.uuid as string) || `asst-hist-${historyMsgs.length}`,
+                role: 'assistant',
+                blocks,
+                isStreaming: false,
+                timestamp: entry.timestamp ? new Date(entry.timestamp as string).getTime() : Date.now(),
+                parentToolUseId: (entry.parent_tool_use_id as string) || null,
+                model: (msg.model as string) || undefined,
+              });
+            }
+          }
+          if (historyMsgs.length > 0) {
+            setMessages(historyMsgs);
+          }
         }
 
       } catch (err) {
