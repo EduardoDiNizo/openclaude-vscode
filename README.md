@@ -214,3 +214,4 @@ MIT
 npm run build && npm run package
 antigravity --install-extension openclaude-vscode-0.2.4.vsix
 code --install-extension openclaude-vscode-0.2.4.vsix
+Developer: Reload Window
