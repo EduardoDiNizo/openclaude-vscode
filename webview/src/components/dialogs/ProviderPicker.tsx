@@ -16,33 +16,34 @@ interface ProviderDef {
 interface ProviderPickerProps {
   providers: ProviderDef[];
   currentProviderId: string;
-  currentModel?: string;
-  currentBaseUrl?: string;
+  providerConfigs: Record<string, { apiKey?: string; baseUrl?: string; model?: string }>;
   onClose: () => void;
 }
 
 export function ProviderPicker({
   providers,
   currentProviderId,
-  currentModel,
-  currentBaseUrl,
+  providerConfigs,
   onClose,
 }: ProviderPickerProps) {
   const [selectedId, setSelectedId] = useState(currentProviderId);
-  const [apiKey, setApiKey] = useState('');
-  const [baseUrl, setBaseUrl] = useState(currentBaseUrl ?? '');
-  const [model, setModel] = useState(currentModel ?? '');
+  const initialConfig = providerConfigs[currentProviderId] || {};
+  const [apiKey, setApiKey] = useState(initialConfig.apiKey ?? '');
+  const [baseUrl, setBaseUrl] = useState(initialConfig.baseUrl ?? '');
+  const [model, setModel] = useState(initialConfig.model ?? '');
   const [errors, setErrors] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   const selectedDef = providers.find((p) => p.id === selectedId) ?? providers[0];
 
-  // Reset fields when provider changes
+  // Load saved configuration or defaults when provider changes
   useEffect(() => {
-    setApiKey('');
-    setBaseUrl(selectedDef?.defaultBaseUrl ?? '');
+    const config = providerConfigs[selectedId] || {};
+    setApiKey(config.apiKey ?? '');
+    setBaseUrl(config.baseUrl ?? selectedDef?.defaultBaseUrl ?? '');
+    setModel(config.model ?? '');
     setErrors([]);
-  }, [selectedId, selectedDef]);
+  }, [selectedId, selectedDef, providerConfigs]);
 
   const validate = useCallback((): string[] => {
     const errs: string[] = [];

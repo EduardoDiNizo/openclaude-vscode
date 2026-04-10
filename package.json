@@ -145,6 +145,11 @@
 					"type": "string",
 					"default": "",
 					"description": "Base URL for the selected provider (for custom/OpenAI-compatible providers)."
+				},
+				"openclaudeCode.providerSettings": {
+					"type": "object",
+					"default": {},
+					"description": "Per-provider settings storing the API Key, Base URL, and Model individually."
 				}
 			}
 		},

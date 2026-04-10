@@ -490,6 +490,12 @@ export function activate(context: vscode.ExtensionContext) {
   webviewManager.onMessage('set_model', async (message) => {
     const msg = message as unknown as { model: string };
     output.info(`[Webview→CLI] set_model: ${msg.model}`);
+    
+    // Save the selected model for the current provider
+    const currentProviderId = settingsSync.selectedProvider;
+    await settingsSync.updateProviderSettings(currentProviderId, { model: msg.model });
+    await settingsSync.setModel(msg.model); // Legacy support
+
     if (processManager) {
       processManager.write({
         type: 'control_request',
@@ -588,7 +594,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     const config = vscode.workspace.getConfiguration('openclaudeCode');
     const executable = resolveCliExecutable(config);
-    const model = config.get<string>('selectedModel');
+    const currentProvider = authManager.getCurrentProvider();
+    const model = currentProvider.model;
     const permissionMode = config.get<string>('initialPermissionMode') as
       | 'default' | 'acceptEdits' | 'plan' | 'bypassPermissions' | 'dontAsk' | undefined;
 
@@ -834,8 +841,7 @@ export function activate(context: vscode.ExtensionContext) {
         defaultBaseUrl: p.defaultBaseUrl,
       })),
       currentProviderId: current.id,
-      currentModel: current.model,
-      currentBaseUrl: settingsSync.baseUrl,
+      providerConfigs: settingsSync.providerSettings,
     } as never);
   });
 
@@ -856,6 +862,7 @@ export function activate(context: vscode.ExtensionContext) {
         type: 'provider_state',
         providers: authManager.getAvailableProviders(),
         currentProviderId: settingsSync.selectedProvider,
+        providerConfigs: settingsSync.providerSettings,
         error: validation.errors.join('; '),
       } as never);
       return;
@@ -880,9 +887,101 @@ export function activate(context: vscode.ExtensionContext) {
         defaultBaseUrl: p.defaultBaseUrl,
       })),
       currentProviderId: current.id,
-      currentModel: current.model,
-      currentBaseUrl: settingsSync.baseUrl,
+      providerConfigs: settingsSync.providerSettings,
     } as never);
+
+    // CRITICAL: Restart the CLI process so it picks up the new provider's ENV vars and 
+    // refreshes its native models array. Without this, it stays connected to the old provider.
+    if (processManager) {
+        processManager.kill();
+        processManager = undefined;
+        ensureProcess();
+    }
+  });
+
+  // Dynamic model fetching
+  webviewManager.onMessage('fetch_remote_models', async (_message, panelId) => {
+    const current = authManager.getCurrentProvider();
+    
+    // Only attempt to fetch for providers that typically support a remote models endpoint
+    if (!['openai', 'custom', 'ollama', 'gemini'].includes(current.id)) {
+        return;
+    }
+
+    const providerConfigs = settingsSync.providerSettings;
+    const providerConfig = providerConfigs[current.id] || {};
+
+    // Specific logic for Google Gemini API
+    if (current.id === 'gemini') {
+        if (!providerConfig.apiKey) return;
+        try {
+            const modelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${providerConfig.apiKey}`;
+            const response = await fetch(modelsUrl, { method: 'GET' });
+            if (response.ok) {
+                const data = await response.json() as { models?: Array<{ name: string, displayName: string }> };
+                if (data && data.models && Array.isArray(data.models)) {
+                    // Extract model ID from e.g. "models/gemini-1.5-pro"
+                    const models = data.models
+                        .filter(m => m.name && m.name.includes('gemini'))
+                        .map((m) => {
+                            const val = m.name.replace(/^models\//, '');
+                            return {
+                                value: val,
+                                displayName: m.displayName || val
+                            };
+                        });
+                    webviewManager!.sendToPanel(panelId, {
+                        type: 'remote_models',
+                        models
+                    } as never);
+                }
+            }
+        } catch (e) {
+            console.error('[OpenClaude] Failed to fetch Gemini models', e);
+        }
+        return;
+    }
+
+    let baseUrl = providerConfig.baseUrl;
+    
+    if (!baseUrl && current.id === 'ollama') {
+        baseUrl = 'http://localhost:11434/v1'; // fallback native to OpenClaude defaults
+    } else if (!baseUrl && current.id === 'openai') {
+        baseUrl = 'https://api.openai.com/v1';
+    }
+
+    if (!baseUrl) return;
+
+    try {
+        const modelsUrl = baseUrl.endsWith('/v1') 
+            ? `${baseUrl}/models` 
+            : `${baseUrl.replace(/\/$/, '')}/v1/models`;
+
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        };
+        // Avoid sending 'Bearer undefined' or 'Bearer ' API keys to local Ollama nodes which might reject it
+        if (providerConfig.apiKey && providerConfig.apiKey !== 'ollama' && providerConfig.apiKey.trim() !== '') {
+            headers['Authorization'] = `Bearer ${providerConfig.apiKey}`;
+        }
+
+        const response = await fetch(modelsUrl, { headers, method: 'GET' });
+        if (response.ok) {
+            const data = await response.json() as { data?: Array<{ id: string }> };
+            if (data && data.data && Array.isArray(data.data)) {
+                const models = data.data.map((m) => ({
+                    value: m.id,
+                    displayName: m.id
+                }));
+                webviewManager!.sendToPanel(panelId, {
+                    type: 'remote_models',
+                    models
+                } as never);
+            }
+        }
+    } catch (e) {
+        output.error(`[Extension] Failed to fetch remote models from ${baseUrl}: ${e}`);
+    }
   });
 
   // ==========================================

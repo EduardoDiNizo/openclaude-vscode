@@ -198,6 +198,11 @@ export interface GetProviderStateMessage {
   type: 'get_provider_state';
 }
 
+/** Webview → Host: request remote models from active provider */
+export interface FetchRemoteModelsMessage {
+  type: 'fetch_remote_models';
+}
+
 /** Webview → Host: set provider configuration (Story 11) */
 export interface SetProviderMessage {
   type: 'set_provider';
@@ -299,6 +304,7 @@ export type WebviewToHostMessage =
   | PlanReviewSubmitMessage
   | TeleportAcceptMessage
   | TeleportRejectMessage
+  | FetchRemoteModelsMessage
   | ToggleFastModeMessage;
 
 // ============================================================
@@ -496,9 +502,14 @@ export interface ProviderStateMessage {
   type: 'provider_state';
   providers: ProviderDefinitionInfo[];
   currentProviderId: string;
-  currentModel?: string;
-  currentBaseUrl?: string;
+  providerConfigs: Record<string, { apiKey?: string; baseUrl?: string; model?: string }>;
   error?: string;
+}
+
+/** Host → Webview: models dynamically fetched from remote provider */
+export interface RemoteModelsMessage {
+  type: 'remote_models';
+  models: Array<{ value: string; displayName: string; }>;
 }
 
 /** All messages the extension host can send to the webview */
@@ -522,7 +533,8 @@ export type HostToWebviewMessage =
   | AtMentionResultsMessage
   | FilePickerResultMessage
   | ActiveFileChangedMessage
-  | SlashCommandsAvailableMessage;
+  | SlashCommandsAvailableMessage
+  | RemoteModelsMessage;
 
 // ============================================================
 // Shared types

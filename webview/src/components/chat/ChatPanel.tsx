@@ -34,6 +34,7 @@ export function ChatPanel() {
     cost,
     isStreaming,
     model,
+    setModel,
     error,
     rateLimitInfo,
     promptSuggestions,
@@ -75,6 +76,28 @@ export function ChatPanel() {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem('openclaude.onboarding.dismissed');
   });
+  const [currentProviderId, setCurrentProviderId] = useState<string>('anthropic');
+  const [remoteModels, setRemoteModels] = useState<Array<{ value: string; displayName: string }>>([]);
+
+  // Listen for provider_state to know the active provider for model filtering
+  useEffect(() => {
+    // Ping to get initial state just in case
+    vscode.postMessage({ type: 'get_provider_state' });
+    const unsub = vscode.onMessage('provider_state', (msg) => {
+      const data = msg as unknown as { currentProviderId?: string };
+      if (data.currentProviderId) {
+        setCurrentProviderId((prev) => {
+          if (prev !== data.currentProviderId) {
+            setRemoteModels([]); // Instantly wipe stale models
+          }
+          return data.currentProviderId!;
+        });
+        // Request the latest models mapping if possible when provider becomes known
+        vscode.postMessage({ type: 'fetch_remote_models' });
+      }
+    });
+    return unsub;
+  }, []);
 
   // Listen for system init messages to get the initial permission mode
   useEffect(() => {
@@ -91,13 +114,16 @@ export function ChatPanel() {
     return unsub;
   }, []);
 
-  // Listen for open_plugin_manager and hide_onboarding messages
+  // Listen for open_plugin_manager, hide_onboarding, and remote_models messages
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (e.data?.type === 'open_plugin_manager') setShowPluginManager(true);
       if (e.data?.type === 'hide_onboarding') {
         setShowOnboarding(false);
         localStorage.setItem('openclaude.onboarding.dismissed', '1');
+      }
+      if (e.data?.type === 'remote_models' && Array.isArray(e.data.models)) {
+        setRemoteModels(e.data.models);
       }
     };
     window.addEventListener('message', handler);
@@ -112,6 +138,50 @@ export function ChatPanel() {
   }, []);
 
   const isStarting = processState === 'starting';
+
+  // Heuristically filter models based on the current AI Provider
+  const filteredModels = React.useMemo(() => {
+    // Combine CLI native models with manually fetched remote models (prevent dupes)
+    const combinedMap = new Map<string, { value: string; displayName: string }>();
+    if (availableModels) availableModels.forEach(m => combinedMap.set(m.value, m));
+    if (remoteModels) remoteModels.forEach(m => combinedMap.set(m.value, m));
+    
+    const combined = Array.from(combinedMap.values());
+    if (combined.length === 0) return [];
+    
+    return combined.filter((m) => {
+      const val = m.value.toLowerCase();
+      // Always allow default picks
+      if (val === 'default' || val === '') return true;
+
+      switch (currentProviderId) {
+        case 'anthropic':
+        case 'bedrock':
+        case 'vertex': {
+          const filterStr = val + ' ' + m.displayName.toLowerCase();
+          return filterStr.includes('claude') || filterStr.includes('opus') || 
+                 filterStr.includes('sonnet') || filterStr.includes('haiku');
+        }
+        case 'openai':
+        case 'github': {
+          const filterStr = val + ' ' + m.displayName.toLowerCase();
+          return filterStr.includes('gpt') || filterStr.includes('o1') || 
+                 filterStr.includes('o3') || filterStr.includes('codex');
+        }
+        case 'gemini':
+          return val.includes('gemini');
+        case 'ollama':
+        case 'custom':
+        default: {
+          const filterStr = val + ' ' + m.displayName.toLowerCase();
+          return !filterStr.includes('claude') && !filterStr.includes('gpt') && 
+                 !filterStr.includes('gemini') && !filterStr.includes('sonnet') && 
+                 !filterStr.includes('opus') && !filterStr.includes('haiku') && 
+                 !filterStr.includes('codex');
+        }
+      }
+    });
+  }, [availableModels, remoteModels, currentProviderId]);
 
   return (
     <div
@@ -242,7 +312,7 @@ export function ChatPanel() {
               onModeChange={handleModeChange}
             />
             <ProviderBadge />
-            <ModelSelector currentModel={model} availableModels={availableModels} />
+            <ModelSelector currentModel={model} availableModels={filteredModels} onModelSelect={setModel} />
             <FastModeToggle
               isEnabled={fastModeState.enabled}
               canToggle={fastModeState.canToggle}

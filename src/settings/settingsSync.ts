@@ -25,6 +25,10 @@ export class SettingsSync {
     return this.config.get<string>('baseUrl') || undefined;
   }
 
+  get providerSettings(): Record<string, { apiKey?: string; baseUrl?: string; model?: string }> {
+    return this.config.get<Record<string, { apiKey?: string; baseUrl?: string; model?: string }>>('providerSettings', {});
+  }
+
   get environmentVariables(): Array<{ name: string; value: string }> {
     return this.config.get<Array<{ name: string; value: string }>>('environmentVariables', []);
   }
@@ -43,5 +47,11 @@ export class SettingsSync {
 
   async setBaseUrl(baseUrl: string | undefined): Promise<void> {
     await this.config.update('baseUrl', baseUrl ?? '', vscode.ConfigurationTarget.Global);
+  }
+
+  async updateProviderSettings(providerId: string, settings: { apiKey?: string; baseUrl?: string; model?: string }): Promise<void> {
+    const current = this.providerSettings;
+    current[providerId] = { ...(current[providerId] || {}), ...settings };
+    await this.config.update('providerSettings', current, vscode.ConfigurationTarget.Global);
   }
 }

@@ -22,8 +22,7 @@ const BUILTIN_PROVIDERS = [
 export function ProviderBadge() {
   const [currentProviderId, setCurrentProviderId] = useState('anthropic');
   const [currentLabel, setCurrentLabel] = useState('Anthropic');
-  const [currentModel, setCurrentModel] = useState<string | undefined>();
-  const [currentBaseUrl, setCurrentBaseUrl] = useState<string | undefined>();
+  const [providerConfigs, setProviderConfigs] = useState<Record<string, { apiKey?: string; baseUrl?: string; model?: string }>>({});
   const [isPickerOpen, setPickerOpen] = useState(false);
   const [providers, setProviders] = useState(BUILTIN_PROVIDERS);
 
@@ -49,12 +48,10 @@ export function ProviderBadge() {
       const data = msg as unknown as {
         providers?: Array<{ id: string; label: string; requiresApiKey?: boolean; requiresBaseUrl?: boolean; supportsModel?: boolean; defaultBaseUrl?: string }>;
         currentProviderId: string;
-        currentModel?: string;
-        currentBaseUrl?: string;
+        providerConfigs?: Record<string, { apiKey?: string; baseUrl?: string; model?: string }>;
       };
       setCurrentProviderId(data.currentProviderId ?? 'anthropic');
-      setCurrentModel(data.currentModel);
-      setCurrentBaseUrl(data.currentBaseUrl);
+      setProviderConfigs(data.providerConfigs ?? {});
       if (data.providers && data.providers.length > 0) {
         setProviders(data.providers.map(p => ({
           ...p,
@@ -74,6 +71,7 @@ export function ProviderBadge() {
     vscode.postMessage({ type: 'get_provider_state' });
   };
 
+  const currentModel = providerConfigs[currentProviderId]?.model;
   const modelLabel = currentModel ? ` · ${currentModel}` : '';
 
   return (
@@ -106,8 +104,7 @@ export function ProviderBadge() {
         <ProviderPicker
           providers={providers}
           currentProviderId={currentProviderId}
-          currentModel={currentModel}
-          currentBaseUrl={currentBaseUrl}
+          providerConfigs={providerConfigs}
           onClose={handlePickerClose}
         />
       )}

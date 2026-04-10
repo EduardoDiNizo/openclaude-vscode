@@ -598,6 +598,7 @@ export function useChat() {
     cost,
     isStreaming,
     model,
+    setModel,
     error,
     rateLimitInfo,
     promptSuggestions,

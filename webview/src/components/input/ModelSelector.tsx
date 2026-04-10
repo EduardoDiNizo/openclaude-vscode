@@ -4,11 +4,17 @@ import { vscode } from '../../vscode';
 interface ModelSelectorProps {
   currentModel: string | null;
   availableModels: Array<{ value: string; displayName: string }>;
+  onModelSelect?: (model: string) => void;
 }
 
-export function ModelSelector({ currentModel, availableModels }: ModelSelectorProps) {
+export function ModelSelector({ currentModel, availableModels, onModelSelect }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) setSearchQuery('');
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -21,6 +27,13 @@ export function ModelSelector({ currentModel, availableModels }: ModelSelectorPr
 
   const displayName = availableModels.find((m) => m.value === currentModel)?.displayName || currentModel || 'Model';
   const shortName = displayName.length > 20 ? displayName.slice(0, 18) + '…' : displayName;
+
+  const displayedModels = searchQuery.trim() === ''
+    ? availableModels
+    : availableModels.filter(m => 
+        m.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        m.value.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
   if (availableModels.length === 0) return null;
 
@@ -59,11 +72,38 @@ export function ModelSelector({ currentModel, availableModels }: ModelSelectorPr
           <div style={{ padding: '6px 12px', fontSize: 11, fontWeight: 600, color: 'var(--app-secondary-foreground)', borderBottom: '1px solid var(--app-input-border)' }}>
             Select Model
           </div>
-          {availableModels.map((m) => (
+          <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--app-input-border)' }}>
+            <input
+              type="text"
+              autoFocus
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '4px 8px',
+                fontSize: 11,
+                background: 'var(--vscode-input-background)',
+                color: 'var(--vscode-input-foreground)',
+                border: '1px solid var(--vscode-input-border)',
+                borderRadius: 'var(--corner-radius-small)',
+                outline: 'none',
+              }}
+            />
+          </div>
+          {displayedModels.length === 0 && (
+            <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--app-secondary-foreground)' }}>
+              No models found.
+            </div>
+          )}
+          {displayedModels.map((m) => (
             <button
               key={m.value}
               onClick={() => {
                 vscode.postMessage({ type: 'set_model', model: m.value });
+                if (onModelSelect) onModelSelect(m.value);
                 setIsOpen(false);
               }}
               style={{

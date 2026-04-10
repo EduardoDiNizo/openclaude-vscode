@@ -66,7 +66,7 @@ const PROVIDER_DEFINITIONS: ProviderDefinition[] = [
     id: 'gemini',
     label: 'Google Gemini',
     requiresApiKey: true,
-    requiresBaseUrl: true,
+    requiresBaseUrl: false,
     supportsModel: true,
   },
   {
@@ -121,9 +121,10 @@ export class AuthManager {
   getCurrentProvider(): ProviderConfig {
     const providerId = this.settings.selectedProvider;
     const def = PROVIDER_DEFINITIONS.find((p) => p.id === providerId) ?? PROVIDER_DEFINITIONS[0];
-    const apiKey = this.settings.apiKey;
-    const baseUrl = this.settings.baseUrl;
-    const model = this.settings.selectedModel;
+    const pSettings = this.settings.providerSettings[def.id] || {};
+    const apiKey = pSettings.apiKey ?? this.settings.apiKey;
+    const baseUrl = pSettings.baseUrl ?? this.settings.baseUrl;
+    const model = pSettings.model ?? this.settings.selectedModel;
 
     return {
       id: def.id,
@@ -139,8 +140,9 @@ export class AuthManager {
   buildProcessEnv(): Record<string, string> {
     const providerId = this.settings.selectedProvider;
     const def = PROVIDER_DEFINITIONS.find((p) => p.id === providerId) ?? PROVIDER_DEFINITIONS[0];
-    const apiKey = this.settings.apiKey;
-    const baseUrl = this.settings.baseUrl;
+    const pSettings = this.settings.providerSettings[def.id] || {};
+    const apiKey = pSettings.apiKey ?? this.settings.apiKey;
+    const baseUrl = pSettings.baseUrl ?? this.settings.baseUrl;
 
     // Start with user-configured env vars
     const env: Record<string, string> = {};
@@ -157,15 +159,18 @@ export class AuthManager {
 
   async updateProvider(input: ProviderUpdateInput): Promise<void> {
     await this.settings.setProvider(input.providerId);
-    if (input.apiKey !== undefined) {
-      await this.settings.setApiKey(input.apiKey);
-    }
-    if (input.baseUrl !== undefined) {
-      await this.settings.setBaseUrl(input.baseUrl);
-    }
-    if (input.model !== undefined) {
-      await this.settings.setModel(input.model);
-    }
+    
+    // Save to the new provider-specific settings object
+    await this.settings.updateProviderSettings(input.providerId, {
+      apiKey: input.apiKey,
+      baseUrl: input.baseUrl,
+      model: input.model,
+    });
+
+    // Also update global legacy values for backward-compatibility or quick-access
+    if (input.apiKey !== undefined) await this.settings.setApiKey(input.apiKey);
+    if (input.baseUrl !== undefined) await this.settings.setBaseUrl(input.baseUrl);
+    if (input.model !== undefined) await this.settings.setModel(input.model);
   }
 
   validate(input: ProviderUpdateInput): ProviderValidationResult {
@@ -216,8 +221,9 @@ export class AuthManager {
         break;
 
       case 'gemini':
+        // Bypass internal SDK model restrictions by using Google's official OpenAI compatibility endpoint
         if (apiKey) env['OPENAI_API_KEY'] = apiKey;
-        if (baseUrl) env['OPENAI_BASE_URL'] = baseUrl;
+        env['OPENAI_BASE_URL'] = baseUrl || 'https://generativelanguage.googleapis.com/v1beta/openai/';
         env['CLAUDE_CODE_USE_OPENAI'] = '1';
         break;
 
