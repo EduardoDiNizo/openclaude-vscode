@@ -62,6 +62,12 @@ export interface SetModelMessage {
   model: string;
 }
 
+/** User favorites or unfavorites an AI model */
+export interface ToggleFavoriteModelMessage {
+  type: 'toggle_favorite_model';
+  model: string;
+}
+
 /** User changes permission mode */
 export interface SetPermissionModeMessage {
   type: 'set_permission_mode';
@@ -263,6 +269,7 @@ export type WebviewToHostMessage =
   | NewConversationMessage
   | ResumeSessionMessage
   | SetModelMessage
+  | ToggleFavoriteModelMessage
   | SetPermissionModeMessage
   | GetContextUsageMessage
   | CopyToClipboardMessage

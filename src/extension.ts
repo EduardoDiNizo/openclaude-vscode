@@ -505,6 +505,39 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  // Handle toggle_favorite_model from webview
+  webviewManager.onMessage('toggle_favorite_model', async (message) => {
+    const msg = message as unknown as { model: string };
+    const currentProviderId = settingsSync.selectedProvider;
+    const pSettings = settingsSync.providerSettings[currentProviderId] || {};
+    let favorites = pSettings.favorites || [];
+    
+    if (favorites.includes(msg.model)) {
+      favorites = favorites.filter((m) => m !== msg.model);
+    } else {
+      favorites = [...favorites, msg.model]; // Add instead of push to avoid modifying read-only proxy in some cases
+    }
+    
+    await settingsSync.updateProviderSettings(currentProviderId, { favorites });
+    
+    // Broadcast updated state to make UI react instantaneously
+    const providers = authManager.getAvailableProviders();
+    const current = authManager.getCurrentProvider();
+    webviewManager!.broadcast({
+      type: 'provider_state',
+      providers: providers.map((p) => ({
+        id: p.id,
+        label: p.label,
+        requiresApiKey: p.requiresApiKey,
+        requiresBaseUrl: p.requiresBaseUrl,
+        supportsModel: p.supportsModel,
+        defaultBaseUrl: p.defaultBaseUrl,
+      })),
+      currentProviderId: current.id,
+      providerConfigs: settingsSync.providerSettings,
+    } as never);
+  });
+
   // Handle set_effort_level from webview
   webviewManager.onMessage('set_effort_level', async (message) => {
     const msg = message as unknown as { level: string };

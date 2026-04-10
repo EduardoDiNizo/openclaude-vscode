@@ -4,10 +4,11 @@ import { vscode } from '../../vscode';
 interface ModelSelectorProps {
   currentModel: string | null;
   availableModels: Array<{ value: string; displayName: string }>;
+  favoriteModels?: string[];
   onModelSelect?: (model: string) => void;
 }
 
-export function ModelSelector({ currentModel, availableModels, onModelSelect }: ModelSelectorProps) {
+export function ModelSelector({ currentModel, availableModels, favoriteModels = [], onModelSelect }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -29,7 +30,13 @@ export function ModelSelector({ currentModel, availableModels, onModelSelect }: 
   const shortName = displayName.length > 20 ? displayName.slice(0, 18) + '…' : displayName;
 
   const displayedModels = searchQuery.trim() === ''
-    ? availableModels
+    ? availableModels.slice().sort((a, b) => {
+        const aFav = favoriteModels.includes(a.value);
+        const bFav = favoriteModels.includes(b.value);
+        if (aFav && !bFav) return -1;
+        if (!aFav && bFav) return 1;
+        return 0;
+      })
     : availableModels.filter(m => 
         m.displayName.toLowerCase().includes(searchQuery.toLowerCase()) || 
         m.value.toLowerCase().includes(searchQuery.toLowerCase())
@@ -98,32 +105,59 @@ export function ModelSelector({ currentModel, availableModels, onModelSelect }: 
               No models found.
             </div>
           )}
-          {displayedModels.map((m) => (
-            <button
+          {displayedModels.map((m) => {
+            const isFav = favoriteModels.includes(m.value);
+            return (
+            <div
               key={m.value}
-              onClick={() => {
-                vscode.postMessage({ type: 'set_model', model: m.value });
-                if (onModelSelect) onModelSelect(m.value);
-                setIsOpen(false);
-              }}
               style={{
-                display: 'block', width: '100%', textAlign: 'left',
-                padding: '8px 12px', fontSize: 12,
+                display: 'flex', width: '100%', alignItems: 'center',
                 background: m.value === currentModel ? 'var(--app-list-active-background)' : 'transparent',
-                color: m.value === currentModel ? 'var(--app-list-active-foreground)' : 'var(--app-primary-foreground)',
-                border: 'none', cursor: 'pointer',
               }}
               onMouseEnter={(e) => {
-                if (m.value !== currentModel) (e.currentTarget as HTMLButtonElement).style.background = 'var(--app-list-hover-background)';
+                if (m.value !== currentModel) (e.currentTarget as HTMLDivElement).style.background = 'var(--app-list-hover-background)';
               }}
               onMouseLeave={(e) => {
-                if (m.value !== currentModel) (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                if (m.value !== currentModel) (e.currentTarget as HTMLDivElement).style.background = 'transparent';
               }}
             >
-              {m.displayName}
-              {m.value === currentModel && <span style={{ marginLeft: 8, opacity: 0.5 }}>✓</span>}
-            </button>
-          ))}
+              <button
+                onClick={() => {
+                  vscode.postMessage({ type: 'set_model', model: m.value });
+                  if (onModelSelect) onModelSelect(m.value);
+                  setIsOpen(false);
+                }}
+                style={{
+                  flex: 1, textAlign: 'left',
+                  padding: '8px 12px', fontSize: 12,
+                  background: 'transparent',
+                  color: m.value === currentModel ? 'var(--app-list-active-foreground)' : 'var(--app-primary-foreground)',
+                  border: 'none', cursor: 'pointer',
+                }}
+              >
+                {m.displayName}
+                {m.value === currentModel && <span style={{ marginLeft: 8, opacity: 0.5 }}>✓</span>}
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  vscode.postMessage({ type: 'toggle_favorite_model', model: m.value });
+                }}
+                title={isFav ? "Unfavorite model" : "Favorite model"}
+                style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  padding: '8px 12px', color: isFav ? 'var(--vscode-charts-yellow)' : 'var(--app-secondary-foreground)',
+                  opacity: isFav ? 1 : 0.3,
+                  fontSize: 14,
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
+                onMouseLeave={(e) => { if (!isFav) (e.currentTarget as HTMLButtonElement).style.opacity = '0.3'; }}
+              >
+                {isFav ? '★' : '☆'}
+              </button>
+            </div>
+            );
+          })}
         </div>
       )}
     </div>

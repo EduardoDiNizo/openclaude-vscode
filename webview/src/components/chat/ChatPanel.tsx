@@ -78,13 +78,14 @@ export function ChatPanel() {
   });
   const [currentProviderId, setCurrentProviderId] = useState<string>('anthropic');
   const [remoteModels, setRemoteModels] = useState<Array<{ value: string; displayName: string }>>([]);
+  const [favoriteModels, setFavoriteModels] = useState<string[]>([]);
 
   // Listen for provider_state to know the active provider for model filtering
   useEffect(() => {
     // Ping to get initial state just in case
     vscode.postMessage({ type: 'get_provider_state' });
     const unsub = vscode.onMessage('provider_state', (msg) => {
-      const data = msg as unknown as { currentProviderId?: string };
+      const data = msg as unknown as { currentProviderId?: string; providerConfigs?: Record<string, { favorites?: string[] }> };
       if (data.currentProviderId) {
         setCurrentProviderId((prev) => {
           if (prev !== data.currentProviderId) {
@@ -94,6 +95,9 @@ export function ChatPanel() {
         });
         // Request the latest models mapping if possible when provider becomes known
         vscode.postMessage({ type: 'fetch_remote_models' });
+      }
+      if (data.currentProviderId && data.providerConfigs) {
+        setFavoriteModels(data.providerConfigs[data.currentProviderId]?.favorites || []);
       }
     });
     return unsub;
@@ -312,7 +316,12 @@ export function ChatPanel() {
               onModeChange={handleModeChange}
             />
             <ProviderBadge />
-            <ModelSelector currentModel={model} availableModels={filteredModels} onModelSelect={setModel} />
+            <ModelSelector 
+              currentModel={model} 
+              availableModels={filteredModels} 
+              favoriteModels={favoriteModels}
+              onModelSelect={setModel} 
+            />
             <FastModeToggle
               isEnabled={fastModeState.enabled}
               canToggle={fastModeState.canToggle}
